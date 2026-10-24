@@ -44,7 +44,7 @@ app.add_middleware(
 @app.middleware("http")
 async def security_headers_and_rate_limit_middleware(request: Request, call_next):
     """Enforce per-IP request rate limits and inject OWASP security headers."""
-    if request.url.path != "/health":
+    if request.url.path != "/health" and not request.url.path.endswith("/video"):
         try:
             check_rate_limit(request)
         except Exception as exc:

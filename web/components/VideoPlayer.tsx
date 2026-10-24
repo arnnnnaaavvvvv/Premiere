@@ -34,11 +34,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ jobId, videoUrl, onRes
       </div>
 
       {/* HTML5 Video Player */}
-      <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner">
+      <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner relative flex items-center justify-center">
         <video
+          key={resolvedUrl}
           src={resolvedUrl}
           controls
           autoPlay
+          muted
+          playsInline
           loop
           className="w-full h-full object-cover"
         />

@@ -79,9 +79,14 @@ def render_scene_frame(scene, frame_idx: int, total_frames: int, media_path: str
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 def find_ffmpeg_bin() -> str | None:
-    """Detect available FFmpeg executable from system or Playwright cache."""
+    """Detect available FFmpeg executable from system, imageio_ffmpeg, or environment."""
     if shutil.which("ffmpeg"):
         return "ffmpeg"
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        pass
     playwright_dir = os.path.expanduser(r"~\AppData\Local\ms-playwright")
     if os.path.exists(playwright_dir):
         for root, _, files in os.walk(playwright_dir):
@@ -91,7 +96,7 @@ def find_ffmpeg_bin() -> str | None:
     return None
 
 async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str], product_name: str, output_dir: Path, live_url: str = "premiere.dev", audio_track_filename: str = "cyber-pulse.wav") -> str:
-    """Stitch beat-aligned scenes into 1080p MP4 and mux audio if available."""
+    """Stitch beat-aligned scenes into browser-compatible H.264 MP4 with faststart and AAC audio."""
     os.makedirs(output_dir, exist_ok=True)
     raw_path = output_dir / f"raw-{job_id}.mp4"
     final_path = output_dir / f"launch-{job_id}.mp4"
@@ -111,8 +116,11 @@ async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str]
     if not audio_wav.exists():
         audio_wav = audio_dir / "cyber-pulse.wav"
 
-    if ffmpeg and audio_wav.exists():
-        cmd = [ffmpeg, "-y", "-i", str(raw_path), "-i", str(audio_wav), "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(final_path)]
+    if ffmpeg:
+        cmd = [ffmpeg, "-y", "-i", str(raw_path)]
+        if audio_wav.exists():
+            cmd += ["-i", str(audio_wav), "-c:a", "aac", "-b:a", "192k", "-shortest"]
+        cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(final_path)]
         try:
             res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
             if res.returncode == 0 and os.path.exists(final_path):
@@ -121,7 +129,7 @@ async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str]
                 except Exception:
                     pass
                 return str(final_path)
-        except (subprocess.TimeoutExpired, Exception):
+        except Exception:
             pass
 
     return str(raw_path)
