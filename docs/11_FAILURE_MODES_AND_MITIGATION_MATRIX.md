@@ -1,6 +1,6 @@
 # 11. Failure Modes & Mitigation Matrix
 
-Every autonomous distributed pipeline will encounter edge cases. ReelForge implements automated graceful degradation across all subsystems:
+Every autonomous distributed pipeline will encounter edge cases. Premiere implements automated graceful degradation across all subsystems:
 
 | Failure Mode | Root Cause | Immediate Diagnostic Signal | Automated Mitigation & Fallback Strategy | User-Facing Experience |
 | :--- | :--- | :--- | :--- | :--- |

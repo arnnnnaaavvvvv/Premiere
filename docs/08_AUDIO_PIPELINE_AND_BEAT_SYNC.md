@@ -2,7 +2,7 @@
 
 ## 1. Curated Soundtrack Architecture & License Tracking
 
-ReelForge ships with an internal catalogue of high-production-value, royalty-free instrumental stems specifically produced for tech keynote trailers. Every track is pre-indexed with acoustic telemetry and licensing metadata:
+Premiere ships with an internal catalogue of high-production-value, royalty-free instrumental stems specifically produced for tech keynote trailers. Every track is pre-indexed with acoustic telemetry and licensing metadata:
 
 ```typescript
 export interface AudioTrackMetadata {

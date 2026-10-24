@@ -24,7 +24,7 @@
 The codebase follows a strict modular structure. Each file is single-purpose, capped at **~150 lines of code**, and avoids leaky or overly clever abstractions. A junior engineer can inspect any module and understand its contract in under 10 minutes.
 
 ```
-reelforge/
+premiere/
 ├── apps/
 │   ├── web/                              # Next.js 14 frontend application
 │   │   ├── app/
@@ -107,7 +107,7 @@ reelforge/
 │   ├── remotion/                         # Remotion video motion design system
 │   │   ├── src/
 │   │   │   ├── index.ts                  # Remotion root registering compositions
-│   │   │   ├── Root.tsx                  # ReelForgeComposition definition with dynamic schema
+│   │   │   ├── Root.tsx                  # PremiereComposition definition with dynamic schema
 │   │   │   ├── compositions/
 │   │   │   │   └── LaunchVideo.tsx       # Main orchestrator sequencing scenes and transitions
 │   │   │   ├── scenes/

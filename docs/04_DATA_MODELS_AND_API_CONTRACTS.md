@@ -255,7 +255,7 @@ event: state_change
 data: {"jobId":"f78a2d12...","status":"COMPLETED","progress":100,"message":"Render finished successfully"}
 
 event: complete
-data: {"jobId":"f78a2d12...","downloadUrl":"https://cdn.reelforge.io/renders/f78a2d12.../final.mp4","previewUrl":"/api/v1/jobs/f78a2d12.../preview"}
+data: {"jobId":"f78a2d12...","downloadUrl":"https://cdn.premiere.dev/renders/f78a2d12.../final.mp4","previewUrl":"/api/v1/jobs/f78a2d12.../preview"}
 ```
 
 ---
@@ -268,7 +268,7 @@ Returns the exact `RemotionProps` object. The web frontend mounts `@remotion/pla
 #### Response: `200 OK`
 ```json
 {
-  "compositionId": "ReelForgeLaunchVideo",
+  "compositionId": "PremiereLaunchVideo",
   "fps": 60,
   "width": 1920,
   "height": 1080,
@@ -282,10 +282,10 @@ Returns the exact `RemotionProps` object. The web frontend mounts `@remotion/pla
     "captionFont": "Inter"
   },
   "audio": {
-    "musicUrl": "https://cdn.reelforge.io/audio/tracks/cyber-pulse.mp3",
+    "musicUrl": "https://cdn.premiere.dev/audio/tracks/cyber-pulse.mp3",
     "volume": 0.8,
     "beatTimestampsSeconds": [0.0, 1.875, 3.75, 5.625, 7.5],
-    "narrationUrl": "https://cdn.reelforge.io/assets/f78a2d12/voiceover.mp3"
+    "narrationUrl": "https://cdn.premiere.dev/assets/f78a2d12/voiceover.mp3"
   },
   "scenes": [...]
 }
@@ -296,7 +296,7 @@ Returns the exact `RemotionProps` object. The web frontend mounts `@remotion/pla
 ### Endpoint 5: Download Final Render
 `GET /api/v1/jobs/{jobId}/download`
 
-Returns a 302 redirect to a secure, pre-signed S3/Cloudflare R2 download URL with `Content-Disposition: attachment; filename="reelforge-launch.mp4"`.
+Returns a 302 redirect to a secure, pre-signed S3/Cloudflare R2 download URL with `Content-Disposition: attachment; filename="premiere-launch.mp4"`.
 
 ---
 
@@ -304,7 +304,7 @@ Returns a 302 redirect to a secure, pre-signed S3/Cloudflare R2 download URL wit
 
 ```json
 {
-  "type": "https://reelforge.io/errors/SSRF_BLOCKED",
+  "type": "https://premiere.dev/errors/SSRF_BLOCKED",
   "title": "Restricted Target Host",
   "status": 400,
   "detail": "The supplied live URL resolves to a private or loopback IP range (127.0.0.1) which is strictly forbidden.",

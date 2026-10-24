@@ -49,7 +49,7 @@ await page.addInitScript(() => {
 
 ## 3. Synthetic Bezier Cursor Choreography
 
-Standard automated scripts exhibit robotic, instantaneous linear mouse movements. ReelForge computes cubic Bezier trajectories simulating human hand-eye motor deceleration (Fitts's Law):
+Standard automated scripts exhibit robotic, instantaneous linear mouse movements. Premiere computes cubic Bezier trajectories simulating human hand-eye motor deceleration (Fitts's Law):
 
 ```typescript
 interface Point { x: number; y: number; }

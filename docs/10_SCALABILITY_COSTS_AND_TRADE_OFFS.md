@@ -8,10 +8,10 @@ The worker fleet scales elastically in response to queue pressure rather than CP
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: reelforge-render-worker-scaler
+  name: premiere-render-worker-scaler
 spec:
   scaleTargetRef:
-    name: reelforge-render-worker
+    name: premiere-render-worker
   minReplicaCount: 1
   maxReplicaCount: 30
   triggers:
@@ -41,7 +41,7 @@ spec:
 | **Egress Bandwidth** | Cloudflare R2 | 2 downloads per video (~90MB) | $0.00 / GB egress | **$0.0000** |
 | **Total Cost** | — | — | — | **~$0.1635 / Video** |
 
-*Key Takeaway*: Rendering and LLM inference account for >98% of variable COGS. At **~$0.16 per video**, ReelForge achieves incredible operating margins at standard SaaS subscription price points ($19 - $49/month).
+*Key Takeaway*: Rendering and LLM inference account for >98% of variable COGS. At **~$0.16 per video**, Premiere achieves incredible operating margins at standard SaaS subscription price points ($19 - $49/month).
 
 ---
 

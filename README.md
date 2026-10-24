@@ -1,12 +1,12 @@
-# ReelForge: Automated MNC-Style Product Launch Video Generator
+# Premiere: Automated MNC-Style Product Launch Video Generator
 ### Complete Architectural Implementation Blueprint
 
 ---
 
 ## Executive Overview
-**ReelForge** is an enterprise-grade autonomous video generation system that converts any live project URL and GitHub repository URL into a broadcast-quality, Apple/Nike-style product launch film (1080p60 MP4) in under **3 minutes**.
+**Premiere** is an enterprise-grade autonomous video generation system that converts any live project URL and GitHub repository URL into a broadcast-quality, Apple/Nike-style product launch film (1080p60 MP4) in under **3 minutes**.
 
-By coupling static AST repository analysis with an autonomous headless browser cinematographer and a programmatic React motion design engine (Remotion), ReelForge eliminates the multi-thousand-dollar overhead and multi-week turnaround of professional motion design agencies.
+By coupling static AST repository analysis with an autonomous headless browser cinematographer and a programmatic React motion design engine (Remotion), Premiere eliminates the multi-thousand-dollar overhead and multi-week turnaround of professional motion design agencies.
 
 ---
 
@@ -124,7 +124,7 @@ By coupling static AST repository analysis with an autonomous headless browser c
 Strict rule: Every file is single-purpose, capped at **~150 lines of code**, with zero clever abstractions.
 
 ```
-reelforge/
+premiere/
 ├── apps/
 │   ├── web/                              # Next.js 14 frontend application
 │   │   ├── app/                          # App Router pages and layouts
@@ -199,7 +199,7 @@ Implemented in PostgreSQL via Prisma (`packages/database/schema.prisma`):
 ### Standardized Error Format (RFC 7807)
 ```json
 {
-  "type": "https://reelforge.io/errors/SSRF_BLOCKED",
+  "type": "https://premiere.dev/errors/SSRF_BLOCKED",
   "title": "Restricted Target Host",
   "status": 400,
   "detail": "The supplied live URL resolves to a private IP range (127.0.0.1) which is strictly forbidden.",
@@ -346,4 +346,4 @@ For full code contracts, schema models, and technical deep-dives:
 - [12. Phased Implementation Roadmap](file:///c:/Users/arnav/OneDrive/Desktop/Premiere/docs/12_PHASED_IMPLEMENTATION_ROADMAP.md)
 
 ---
-*Authored by Principal Software Architecture Lead. ReelForge Engine v1.0.0 Blueprint.*
+*Authored by Principal Software Architecture Lead. Premiere Engine v1.0.0 Blueprint.*

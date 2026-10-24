@@ -148,7 +148,7 @@ interface KineticTextProps {
 interface OutroProps {
   productName: string;
   primaryCtaText: string;      // e.g. "START BUILDING TODAY"
-  domainUrl: string;           // e.g. "reelforge.io"
+  domainUrl: string;           // e.g. "premiere.dev"
   githubStarsBadge?: string;   // e.g. "★ 4.2k ON GITHUB"
   logoUrl?: string;
 }

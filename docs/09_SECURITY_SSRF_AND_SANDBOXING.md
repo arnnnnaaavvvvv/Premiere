@@ -2,7 +2,7 @@
 
 ## 1. Threat Model & Attack Vectors
 
-Because ReelForge ingests arbitrary user-supplied URLs and spawns headless browsers in internal infrastructure, it faces severe attack vectors if improperly defended:
+Because Premiere ingests arbitrary user-supplied URLs and spawns headless browsers in internal infrastructure, it faces severe attack vectors if improperly defended:
 1. **Server-Side Request Forgery (SSRF)**: Attacker submits `http://169.254.169.254/latest/meta-data/` to harvest cloud credentials, or `http://10.0.0.5:6379` to compromise Redis.
 2. **DNS Rebinding**: Attacker supplies a public hostname that initially resolves to a public IP during validation, but shifts to an internal IP ($127.0.0.1$) when Playwright navigates.
 3. **Headless Browser Remote Code Execution (RCE)**: Attacker crafts a malicious WebGL/V8 exploit targeting the headless Chromium rendering engine.

@@ -1,7 +1,7 @@
 # 01. System Scope & Non-Goals
 
 ## 1. Executive Summary
-**ReelForge** is a specialized, zero-touch automated video generation engine. By accepting two primary inputs—a **live project URL** and a **public or authenticated GitHub repository URL**—it synthesizes software architecture, brand tokens, and UI layout into an ultra-premium, 60fps MNC-grade launch video (MP4) in under 3 minutes.
+**Premiere** is a specialized, zero-touch automated video generation engine. By accepting two primary inputs—a **live project URL** and a **public or authenticated GitHub repository URL**—it synthesizes software architecture, brand tokens, and UI layout into an ultra-premium, 60fps MNC-grade launch video (MP4) in under 3 minutes.
 
 The design benchmark is the high-velocity, precision-engineered hardware and software launch films pioneered by Apple and Nike:
 - Typography anchored by **Bebas Neue** (massive, tight uppercase display headings) with **Inter** micro-captions.
@@ -30,19 +30,19 @@ The design benchmark is the high-velocity, precision-engineered hardware and sof
 
 ## 3. Explicit Non-Goals
 
-To maintain high development velocity, rock-solid reliability, and single-purpose engineering excellence, ReelForge explicitly excludes:
+To maintain high development velocity, rock-solid reliability, and single-purpose engineering excellence, Premiere explicitly excludes:
 
-1. **Not a Freeform Canvas Video Editor (No Premiere/Canva/CapCut Clone)**  
-   ReelForge will not provide a drag-and-drop timeline, manual keyframe curve editors, custom font uploads, or arbitrary layer positioning. All motion graphics are governed by programmatic React compositions with strict design tokens.
+1. **Not a Freeform Canvas Video Editor (No Adobe Premiere Pro / After Effects / Canva Clone)**  
+   Premiere will not provide a drag-and-drop timeline, manual keyframe curve editors, custom font uploads, or arbitrary layer positioning. All motion graphics are governed by programmatic React compositions with strict design tokens.
 
 2. **Not a General Screen Recorder or Desktop Application Capture Tool**  
-   ReelForge does not capture Electron desktop apps, mobile simulators on local host machines, or CLI terminal windows unless they are exposed through a web interface.
+   Premiere does not capture Electron desktop apps, mobile simulators on local host machines, or CLI terminal windows unless they are exposed through a web interface.
 
 3. **Not an Automated QA / E2E Testing Suite**  
-   While Playwright is used for automation, ReelForge does not run functional assertions, regression checks, or load testing. The browser session is strictly an aesthetic cinematography rig.
+   While Playwright is used for automation, Premiere does not run functional assertions, regression checks, or load testing. The browser session is strictly an aesthetic cinematography rig.
 
 4. **Not a Permanent Video Hosting or Streaming CDN**  
-   ReelForge generates and delivers downloadable MP4 files. Rendered videos are retained in S3/Cloudflare R2 storage for a configurable retention window (e.g., 7 days on free tiers, 30 days on paid tiers) with signed download links. Long-term video streaming or embed player hosting is not provided.
+   Premiere generates and delivers downloadable MP4 files. Rendered videos are retained in S3/Cloudflare R2 storage for a configurable retention window (e.g., 7 days on free tiers, 30 days on paid tiers) with signed download links. Long-term video streaming or embed player hosting is not provided.
 
 5. **Not a Code Remediation or Code Review Platform**  
    The repository analysis pipeline extracts brand identity, tech stack, and feature descriptions; it does not review, lint, or provide security assessments of the user's code.
