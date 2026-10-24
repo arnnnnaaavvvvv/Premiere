@@ -10,7 +10,7 @@
   "dependencies": {
     "@remotion/google-fonts": "^4.0.160",
     "@remotion/transitions": "^4.0.160",
-    "react": "^18.3.1",
+    "react": "^19.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.160"
   },
