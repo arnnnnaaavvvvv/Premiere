@@ -30,70 +30,48 @@ def draw_safe_text(draw: ImageDraw.ImageDraw, text: str, y: int, max_w: int, bas
     size = base_size
     font = get_font(font_path, size)
     bbox = draw.textbbox((0, 0), text, font=font)
-    w = bbox[2] - bbox[0]
-
-    # Shrink font until text fits comfortably within safe margins
-    while w > max_w and size > 24:
+    while (bbox[2] - bbox[0]) > max_w and size > 24:
         size -= 4
         font = get_font(font_path, size)
         bbox = draw.textbbox((0, 0), text, font=font)
-        w = bbox[2] - bbox[0]
-
     draw.text((960, y), text, fill=fill, font=font, anchor="mm")
 
-def render_scene_frame(
-    scene,
-    frame_idx: int,
-    total_frames: int,
-    media_path: str | None,
-    product_name: str,
-    live_url: str = "premiere.dev",
-    brand_color: tuple[int, int, int] = (59, 130, 246),
-) -> np.ndarray:
+def render_scene_frame(scene, frame_idx: int, total_frames: int, media_path: str | None, product_name: str, live_url: str = "premiere.dev", brand_color: tuple[int, int, int] = (59, 130, 246)) -> np.ndarray:
     """Render 1920x1080 frame with Bebas Neue typography, safe margins, and glow."""
     img = Image.new("RGB", (1920, 1080), color=(5, 5, 5))
     draw = ImageDraw.Draw(img)
 
-    # 1. Ambient Radial Glow
-    glow_overlay = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
-    glow_draw = ImageDraw.Draw(glow_overlay)
-    glow_draw.ellipse([460, 120, 1460, 780], fill=(*brand_color, 28))
-    img.paste(glow_overlay, (0, 0), glow_overlay)
+    glow = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([460, 120, 1460, 780], fill=(*brand_color, 28))
+    img.paste(glow, (0, 0), glow)
 
-    # 2. Render Scene Typography adhering to Safe Margins (Max Width: 1680px)
     max_safe_width = 1680
     headline = scene.headline.upper()
 
     if scene.scene_type in ("TitleReveal", "StatCounter", "KineticText"):
-        draw_safe_text(draw, headline, 480, max_safe_width, 140, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, headline, 480, max_safe_width, 140, BEBAS_FONT_PATH)
         draw_safe_text(draw, scene.caption, 590, max_safe_width, 28, INTER_FONT_PATH, (148, 163, 184))
-
     elif scene.scene_type == "DeviceShowcase":
-        draw_safe_text(draw, headline, 160, max_safe_width, 84, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, headline, 160, max_safe_width, 84, BEBAS_FONT_PATH)
         if media_path and os.path.exists(media_path):
             try:
-                screen = Image.open(media_path).resize((1300, 720))
-                img.paste(screen, (310, 240))
+                img.paste(Image.open(media_path).resize((1300, 720)), (310, 240))
             except Exception:
                 pass
         draw.rectangle([308, 238, 1612, 962], outline=(*brand_color, 140), width=3)
-
     elif scene.scene_type == "FeatureZoom":
         if media_path and os.path.exists(media_path):
             try:
-                screen = Image.open(media_path).resize((1920, 1080))
-                img.paste(screen, (0, 0))
+                img.paste(Image.open(media_path).resize((1920, 1080)), (0, 0))
             except Exception:
                 pass
         draw.rectangle([120, 700, 840, 960], fill=(13, 15, 20), outline=(255, 255, 255, 80), width=1)
-        draw_safe_text(draw, headline, 780, 680, 64, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, headline, 780, 680, 64, BEBAS_FONT_PATH)
         draw_safe_text(draw, scene.caption, 860, 680, 22, INTER_FONT_PATH, (148, 163, 184))
-
     elif scene.scene_type == "Outro":
-        draw_safe_text(draw, headline, 420, max_safe_width, 130, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, headline, 420, max_safe_width, 130, BEBAS_FONT_PATH)
         draw.rectangle([740, 520, 1180, 600], fill=brand_color)
-        draw_safe_text(draw, "GET STARTED NOW", 560, 400, 36, BEBAS_FONT_PATH, (255, 255, 255))
-        # Outro always includes the target URL
+        draw_safe_text(draw, "GET STARTED NOW", 560, 400, 36, BEBAS_FONT_PATH)
         clean_url = live_url.replace("https://", "").replace("http://", "").rstrip("/")
         draw_safe_text(draw, clean_url.upper(), 660, max_safe_width, 26, INTER_FONT_PATH, (148, 163, 184))
 
@@ -107,64 +85,37 @@ def find_ffmpeg_bin() -> str | None:
     if os.path.exists(playwright_dir):
         for root, _, files in os.walk(playwright_dir):
             for f in files:
-                if f.lower().startswith("ffmpeg"):
+                if f.lower().startswith("ffmpeg") and f.lower().endswith(".exe"):
                     return os.path.join(root, f)
     return None
 
-async def render_video(
-    job_id: str,
-    plan: ScenePlan,
-    asset_paths: dict[str, str],
-    product_name: str,
-    output_dir: Path,
-    live_url: str = "premiere.dev",
-) -> str:
+async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str], product_name: str, output_dir: Path, live_url: str = "premiere.dev") -> str:
     """Stitch beat-aligned scenes into 1080p MP4 and mux audio if available."""
     os.makedirs(output_dir, exist_ok=True)
-    raw_video_path = output_dir / f"raw-{job_id}.mp4"
-    final_mp4_path = output_dir / f"launch-{job_id}.mp4"
+    raw_path = output_dir / f"raw-{job_id}.mp4"
+    final_path = output_dir / f"launch-{job_id}.mp4"
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(str(raw_video_path), fourcc, 30.0, (1920, 1080))
-
+    out = cv2.VideoWriter(str(raw_path), cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (1920, 1080))
     try:
         for scene in plan.scenes:
             media = asset_paths.get(scene.scene_id)
             for f in range(scene.duration_frames):
-                frame_bgr = render_scene_frame(
-                    scene=scene,
-                    frame_idx=f,
-                    total_frames=scene.duration_frames,
-                    media_path=media,
-                    product_name=product_name,
-                    live_url=live_url,
-                )
-                out.write(frame_bgr)
+                out.write(render_scene_frame(scene, f, scene.duration_frames, media, product_name, live_url))
     finally:
         out.release()
 
-    # Mux audio with FFmpeg if available
-    ffmpeg = find_ffmpeg_bin()
-    audio_wav = Path(__file__).resolve().parent / "audio" / "cyber-pulse.wav"
-
+    ffmpeg, audio_wav = find_ffmpeg_bin(), Path(__file__).resolve().parent / "audio" / "cyber-pulse.wav"
     if ffmpeg and audio_wav.exists():
-        cmd = [
-            ffmpeg, "-y",
-            "-i", str(raw_video_path),
-            "-i", str(audio_wav),
-            "-c:v", "copy",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-shortest",
-            str(final_mp4_path)
-        ]
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if res.returncode == 0 and os.path.exists(final_mp4_path):
-            try:
-                os.remove(raw_video_path)
-            except Exception:
-                pass
-            return str(final_mp4_path)
+        cmd = [ffmpeg, "-y", "-i", str(raw_path), "-i", str(audio_wav), "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(final_path)]
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+            if res.returncode == 0 and os.path.exists(final_path):
+                try:
+                    os.remove(raw_path)
+                except Exception:
+                    pass
+                return str(final_path)
+        except (subprocess.TimeoutExpired, Exception):
+            pass
 
-    # Fallback to raw video if audio muxing was skipped
-    return str(raw_video_path)
+    return str(raw_path)

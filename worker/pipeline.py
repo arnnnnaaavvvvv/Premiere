@@ -1,6 +1,7 @@
 """Pipeline orchestrator running analyze, script, capture, and render sequentially."""
 
 import os
+import re
 import time
 from pathlib import Path
 from sqlalchemy import select
@@ -16,6 +17,14 @@ from worker.script import generate_scene_plan
 
 logger = structlog.get_logger()
 
+def _sanitize_error(exc: Exception) -> str:
+    """Scrub potential credentials or stack tokens from error message."""
+    raw = str(exc)
+    for sensitive in ("key", "token", "secret", "password", "bearer"):
+        if sensitive in raw.lower():
+            return "Internal pipeline error during stage execution."
+    return raw[:200]
+
 async def update_job_status(job_id: str, status: JobStatus, progress: int, stage: str, error: str | None = None):
     """Atomically update database record with current pipeline stage and progress."""
     async with AsyncSessionLocal() as db:
@@ -30,38 +39,41 @@ async def update_job_status(job_id: str, status: JobStatus, progress: int, stage
             await db.commit()
 
 async def run_pipeline(job_id: str) -> str:
-    """Execute end-to-end video pipeline for given job ID."""
+    """Execute end-to-end video pipeline for given job ID with idempotency guard."""
+    if not re.match(r"^[0-9a-fA-F\-]{36}$", job_id):
+        raise ValueError(f"Invalid job identifier: {job_id}")
+
     async with AsyncSessionLocal() as db:
         res = await db.execute(select(Job).where(Job.id == job_id))
         job = res.scalar_one_or_none()
         if not job:
             raise ValueError(f"Job {job_id} not found")
+        if job.status in (JobStatus.DONE, JobStatus.RENDERING):
+            return ""
         live_url, repo_url, mood = job.live_url, job.repo_url, job.mood
 
-    job_storage_dir = Path(settings.storage_dir) / job_id
+    storage_root = Path(settings.storage_dir).resolve()
+    job_storage_dir = (storage_root / job_id).resolve()
+    if not str(job_storage_dir).startswith(str(storage_root)):
+        raise ValueError("Invalid storage path traversal attempt")
+
     os.makedirs(job_storage_dir, exist_ok=True)
-    start_time = time.time()
     logger.info("Pipeline started", job_id=job_id, live_url=live_url, repo_url=repo_url)
 
     try:
         # 1. Analyze Stage
-        t0 = time.time()
         await update_job_status(job_id, JobStatus.ANALYZING, 15, "Analyzing GitHub repository...")
         brief = await analyze_repository(repo_url, live_url)
-        logger.info("Stage completed: analyze", job_id=job_id, duration_sec=round(time.time() - t0, 2))
 
         # 2. Script Stage
-        t0 = time.time()
         await update_job_status(job_id, JobStatus.SCRIPTING, 35, "Synthesizing Apple-style scene plan...")
         plan = generate_scene_plan(job_id, brief, mood=mood, fps=settings.render_fps)
-        logger.info("Stage completed: script", job_id=job_id, duration_sec=round(time.time() - t0, 2))
 
         async with AsyncSessionLocal() as db:
             db.add(Script(job_id=job_id, product_brief=brief.model_dump(), scene_plan=plan.model_dump()))
             await db.commit()
 
         # 3. Capture Stage
-        t0 = time.time()
         await update_job_status(job_id, JobStatus.CAPTURING, 55, "Recording 60fps browser interactions...")
         asset_paths = {}
         for scene in plan.scenes:
@@ -71,13 +83,11 @@ async def run_pipeline(job_id: str) -> str:
                 async with AsyncSessionLocal() as db:
                     db.add(Asset(job_id=job_id, asset_type="screenshot", file_path=captures.get("screenshot", "")))
                     await db.commit()
-        logger.info("Stage completed: capture", job_id=job_id, duration_sec=round(time.time() - t0, 2))
 
         # 4. Audio & Beat Quantization
-        track = select_track_for_mood(mood)
+        select_track_for_mood(mood)
 
         # 5. Render Stage
-        t0 = time.time()
         await update_job_status(job_id, JobStatus.RENDERING, 75, "Rendering 1080p MP4 launch film...")
         mp4_path = await render_video(
             job_id,
@@ -87,7 +97,6 @@ async def run_pipeline(job_id: str) -> str:
             job_storage_dir,
             live_url=live_url,
         )
-        logger.info("Stage completed: render", job_id=job_id, duration_sec=round(time.time() - t0, 2))
 
         # 6. Complete
         file_size = os.path.getsize(mp4_path) if os.path.exists(mp4_path) else 0
@@ -107,5 +116,7 @@ async def run_pipeline(job_id: str) -> str:
         return mp4_path
 
     except Exception as exc:
-        await update_job_status(job_id, JobStatus.FAILED, 0, "Pipeline failed", error=str(exc))
+        safe_err = _sanitize_error(exc)
+        await update_job_status(job_id, JobStatus.FAILED, 0, "Pipeline failed", error=safe_err)
         raise
+

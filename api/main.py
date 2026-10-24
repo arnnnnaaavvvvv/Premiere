@@ -1,15 +1,17 @@
-"""Main FastAPI application entrypoint."""
+"""Main FastAPI application entrypoint with security headers and isolated storage."""
 
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+import structlog
 from api.config import settings
 from api.database import init_db
 from api.rate_limit import check_rate_limit
 from api.routes.jobs import router as jobs_router
+
+logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,10 +37,9 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def rate_limiting_middleware(request: Request, call_next):
-    """Enforce per-IP request rate limits."""
-    # Skip rate limiting for static media or health check
-    if not request.url.path.startswith("/storage") and request.url.path != "/health":
+async def security_headers_and_rate_limit_middleware(request: Request, call_next):
+    """Enforce per-IP request rate limits and inject OWASP security headers."""
+    if request.url.path != "/health":
         try:
             check_rate_limit(request)
         except Exception as exc:
@@ -46,16 +47,25 @@ async def rate_limiting_middleware(request: Request, call_next):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={"error": "RateLimitExceeded", "detail": str(exc), "status_code": 429},
             )
-    return await call_next(request)
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
+    return response
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Catch-all error handler producing consistent JSON error structure."""
+    """Catch-all error handler producing safe error envelopes without leaking internals."""
+    logger.error("Unhandled server exception", path=request.url.path, error=str(exc))
+    detail_msg = str(exc) if settings.debug else "An internal server error occurred."
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "InternalServerError",
-            "detail": str(exc),
+            "detail": detail_msg,
             "status_code": 500,
         },
     )
@@ -68,6 +78,3 @@ async def health_check():
 # Include routers
 app.include_router(jobs_router, prefix="/api/v1")
 
-# Mount storage directory for static access
-if os.path.exists(settings.storage_dir):
-    app.mount("/storage", StaticFiles(directory=settings.storage_dir), name="storage")

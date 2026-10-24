@@ -72,6 +72,7 @@ export default function Home() {
         {currentJob && currentJob.status === "done" && (
           <VideoPlayer
             jobId={currentJob.id}
+            videoUrl={currentJob.video_url}
             onReset={() => setCurrentJob(null)}
           />
         )}

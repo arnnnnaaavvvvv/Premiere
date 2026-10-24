@@ -5,11 +5,12 @@ import { getVideoDownloadUrl } from "../lib/api";
 
 interface VideoPlayerProps {
   jobId: string;
+  videoUrl?: string | null;
   onReset: () => void;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ jobId, onReset }) => {
-  const videoUrl = getVideoDownloadUrl(jobId);
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ jobId, videoUrl, onReset }) => {
+  const resolvedUrl = videoUrl || getVideoDownloadUrl(jobId);
 
   return (
     <div className="w-full max-w-4xl bg-[#0D0F14] border border-white/10 rounded-2xl overflow-hidden shadow-2xl space-y-6 p-6">
@@ -35,7 +36,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ jobId, onReset }) => {
       {/* HTML5 Video Player */}
       <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner">
         <video
-          src={videoUrl}
+          src={resolvedUrl}
           controls
           autoPlay
           loop
@@ -46,7 +47,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ jobId, onReset }) => {
       {/* Action Controls */}
       <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
         <a
-          href={videoUrl}
+          href={resolvedUrl}
           download={`launch-${jobId.slice(0, 8)}.mp4`}
           className="w-full sm:w-auto flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-headline text-2xl tracking-wide rounded-xl uppercase transition text-center shadow-lg shadow-emerald-600/20"
         >

@@ -45,8 +45,10 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:8000"
 
     # Security & Limits
+    secret_key: str = Field(default="change-in-production-premiere-secret-key-32bytes", validation_alias="SECRET_KEY")
     ssrf_protection_enabled: bool = True
     rate_limit_per_minute: int = DEFAULT_RATE_LIMIT_PER_MIN
+    job_rate_limit_per_minute: int = 10
 
     # Video render specs
     render_fps: int = DEFAULT_FPS
@@ -55,3 +57,4 @@ class Settings(BaseSettings):
     render_height: int = DEFAULT_HEIGHT
 
 settings = Settings()
+
