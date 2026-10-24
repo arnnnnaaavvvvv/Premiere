@@ -2,6 +2,7 @@
 
 import json
 import re
+from urllib.parse import urlparse
 import httpx
 from api.config import settings
 from worker.models import FeatureItem, MetricItem, ProductBrief
@@ -10,9 +11,14 @@ GITHUB_API_BASE = "https://api.github.com/repos"
 
 def parse_github_owner_repo(repo_url: str) -> tuple[str, str]:
     """Extract and strictly validate owner and repo name from GitHub URL."""
-    clean = re.sub(r"^(https?://)?(www\.)?github\.com/", "", repo_url).strip("/")
-    parts = clean.split("/")
-    if len(parts) < 2:
+    clean = repo_url.strip()
+    if not clean.startswith(("http://", "https://")):
+        clean = "https://" + clean
+    parsed = urlparse(clean)
+    if parsed.netloc.lower() not in ("github.com", "www.github.com"):
+        raise ValueError(f"Invalid GitHub repository host: {parsed.netloc}")
+    parts = [p for p in parsed.path.strip("/").split("/") if p]
+    if len(parts) != 2:
         raise ValueError(f"Invalid GitHub repository URL: {repo_url}")
     owner, repo = parts[0], parts[1].replace(".git", "")
     if not re.match(r"^[a-zA-Z0-9_\-\.]+$", owner) or not re.match(r"^[a-zA-Z0-9_\-\.]+$", repo) or ".." in owner or ".." in repo:
@@ -23,6 +29,8 @@ async def fetch_github_data(repo_url: str) -> dict:
     """Fetch README, package.json, and file tree from GitHub API or raw content."""
     owner, repo = parse_github_owner_repo(repo_url)
     headers = {"User-Agent": "Premiere-Pipeline"}
+    if settings.github_token:
+        headers["Authorization"] = f"Bearer {settings.github_token}"
     data = {"readme": "", "package_json": {}, "routes": ["/"]}
 
     async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
@@ -35,6 +43,8 @@ async def fetch_github_data(repo_url: str) -> dict:
 
         pkg_url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/package.json"
         pkg_r = await client.get(pkg_url)
+        if pkg_r.status_code != 200:
+            pkg_r = await client.get(f"https://raw.githubusercontent.com/{owner}/{repo}/master/package.json")
         if pkg_r.status_code == 200:
             try:
                 data["package_json"] = pkg_r.json()
@@ -43,18 +53,24 @@ async def fetch_github_data(repo_url: str) -> dict:
 
         tree_url = f"{GITHUB_API_BASE}/{owner}/{repo}/git/trees/main?recursive=1"
         tree_r = await client.get(tree_url)
+        if tree_r.status_code != 200:
+            tree_r = await client.get(f"{GITHUB_API_BASE}/{owner}/{repo}/git/trees/master?recursive=1")
         if tree_r.status_code == 200:
-            tree_data = tree_r.json()
-            routes = set(["/"])
-            for item in tree_data.get("tree", []):
-                path = item.get("path", "")
-                if ("pages/" in path or "app/" in path) and any(path.endswith(ext) for ext in [".tsx", ".jsx", ".vue"]):
-                    cleaned = re.sub(r"^(pages|app)/?", "/", path)
-                    cleaned = re.sub(r"/(page|index)\.[a-z]+$", "", cleaned)
-                    cleaned = re.sub(r"\.[a-z]+$", "", cleaned)
-                    if cleaned and not cleaned.startswith("/api") and "[" not in cleaned:
-                        routes.add(cleaned)
-            data["routes"] = sorted(list(routes))[:5]
+            try:
+                tree_data = tree_r.json()
+                if isinstance(tree_data, dict):
+                    routes = set(["/"])
+                    for item in tree_data.get("tree", []):
+                        path = item.get("path", "")
+                        if ("pages/" in path or "app/" in path) and any(path.endswith(ext) for ext in [".tsx", ".jsx", ".vue"]):
+                            cleaned = re.sub(r"^(pages|app)/?", "/", path)
+                            cleaned = re.sub(r"/(page|index)\.[a-z]+$", "", cleaned)
+                            cleaned = re.sub(r"\.[a-z]+$", "", cleaned)
+                            if cleaned and not cleaned.startswith("/api") and "[" not in cleaned:
+                                routes.add(cleaned)
+                    data["routes"] = sorted(list(routes))[:5]
+            except Exception:
+                pass
 
     return data
 
@@ -64,6 +80,8 @@ def build_deterministic_brief(repo_url: str, live_url: str, data: dict) -> Produ
     clean_name = repo.replace("-", " ").replace("_", " ").title()
     pkg = data.get("package_json", {})
     desc = pkg.get("description") or "High performance software engineered for modern workflows."
+    routes = data.get("routes") or ["/"]
+    second_route = routes[1] if len(routes) > 1 else "/"
 
     return ProductBrief(
         product_name=clean_name,
@@ -73,7 +91,7 @@ def build_deterministic_brief(repo_url: str, live_url: str, data: dict) -> Produ
         category="SaaS Platform",
         key_features=[
             FeatureItem(headline="AUTONOMOUS PIPELINE", detail="Instant workflow automation from source to delivery", associated_route="/"),
-            FeatureItem(headline="REAL-TIME TELEMETRY", detail="Sub-millisecond state tracking and live telemetry", associated_route=data["routes"][1] if len(data["routes"]) > 1 else "/"),
+            FeatureItem(headline="REAL-TIME TELEMETRY", detail="Sub-millisecond state tracking and live telemetry", associated_route=second_route),
             FeatureItem(headline="SCALABLE ARCHITECTURE", detail="Built for enterprise workloads and instant scaling", associated_route="/"),
         ],
         metrics=[
@@ -81,7 +99,7 @@ def build_deterministic_brief(repo_url: str, live_url: str, data: dict) -> Produ
             MetricItem(value="99.9%", label="PIPELINE UPTIME"),
             MetricItem(value="<5ms", label="QUERY LATENCY"),
         ],
-        detected_routes=data.get("routes", ["/"]),
+        detected_routes=routes,
         brand_color="#3B82F6",
     )
 
@@ -129,4 +147,3 @@ async def analyze_repository(repo_url: str, live_url: str) -> ProductBrief:
             pass
 
     return build_deterministic_brief(repo_url, live_url, repo_data)
-

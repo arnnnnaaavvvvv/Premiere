@@ -6,7 +6,7 @@
     "bpm": 128,
     "license": "CC-BY-4.0",
     "attribution": "Royalty Free Audio Library",
-    "filename": "cyber-pulse.mp3",
+    "filename": "cyber-pulse.wav",
     "beat_interval_sec": 0.46875
   },
   {
@@ -16,7 +16,7 @@
     "bpm": 100,
     "license": "Royalty-Free-Commercial",
     "attribution": "Royalty Free Audio Library",
-    "filename": "ambient-horizon.mp3",
+    "filename": "ambient-horizon.wav",
     "beat_interval_sec": 0.6
   },
   {
@@ -26,7 +26,7 @@
     "bpm": 140,
     "license": "Royalty-Free-Commercial",
     "attribution": "Royalty Free Audio Library",
-    "filename": "neon-overdrive.mp3",
+    "filename": "neon-overdrive.wav",
     "beat_interval_sec": 0.42857
   }
 ]

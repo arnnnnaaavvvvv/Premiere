@@ -1,10 +1,11 @@
-"""Main FastAPI application entrypoint with security headers and isolated storage."""
+"""Main FastAPI application entrypoint with security headers, startup health checks, and unified error handling."""
 
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import structlog
 from api.config import settings
 from api.database import init_db
@@ -15,9 +16,13 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize resources on startup and clean up on shutdown."""
+    """Initialize resources and perform startup dependency verification."""
     os.makedirs(settings.storage_dir, exist_ok=True)
     await init_db()
+    font_path = settings.storage_dir.parent / "worker" / "assets" / "fonts" / "BebasNeue-Regular.ttf"
+    if not font_path.exists():
+        logger.warning("Bebas Neue TrueType font file is missing", path=str(font_path))
+    logger.info("Application initialized", app=settings.app_name, storage=str(settings.storage_dir))
     yield
 
 app = FastAPI(
@@ -56,6 +61,14 @@ async def security_headers_and_rate_limit_middleware(request: Request, call_next
     response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
     return response
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Produce standardized JSON error responses for all HTTP exceptions."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": "HttpException", "detail": exc.detail, "status_code": exc.status_code},
+    )
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all error handler producing safe error envelopes without leaking internals."""
@@ -63,11 +76,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     detail_msg = str(exc) if settings.debug else "An internal server error occurred."
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "error": "InternalServerError",
-            "detail": detail_msg,
-            "status_code": 500,
-        },
+        content={"error": "InternalServerError", "detail": detail_msg, "status_code": 500},
     )
 
 @app.get("/health", tags=["System"])
@@ -77,4 +86,3 @@ async def health_check():
 
 # Include routers
 app.include_router(jobs_router, prefix="/api/v1")
-

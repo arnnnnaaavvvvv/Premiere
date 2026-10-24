@@ -42,7 +42,19 @@ def generate_beat_track(output_wav: str, bpm: float = 128.0, duration_sec: float
         wf.setframerate(sr)
         wf.writeframes(audio_int16.tobytes())
 
-if __name__ == "__main__":
+def generate_all_stems():
+    """Synthesize audio files for all three mood tracks."""
     base = os.path.dirname(__file__)
-    generate_beat_track(os.path.join(base, "cyber-pulse.wav"), 128.0, 30.0)
-    print("Default audio stem generated.")
+    stems = [
+        ("cyber-pulse.wav", 128.0),
+        ("ambient-horizon.wav", 100.0),
+        ("neon-overdrive.wav", 140.0),
+    ]
+    for filename, bpm in stems:
+        path = os.path.join(base, filename)
+        if not os.path.exists(path):
+            generate_beat_track(path, bpm, 30.0)
+
+if __name__ == "__main__":
+    generate_all_stems()
+    print("All audio stems generated successfully.")

@@ -2,9 +2,8 @@
 
 import os
 import re
-import time
 from pathlib import Path
-from sqlalchemy import select
+from sqlalchemy import delete, select
 import structlog
 from api.config import settings
 from api.database import AsyncSessionLocal
@@ -52,6 +51,12 @@ async def run_pipeline(job_id: str) -> str:
             return ""
         live_url, repo_url, mood = job.live_url, job.repo_url, job.mood
 
+        # Clean any stale records from prior failed run for idempotency
+        await db.execute(delete(Script).where(Script.job_id == job_id))
+        await db.execute(delete(Asset).where(Asset.job_id == job_id))
+        await db.execute(delete(Render).where(Render.job_id == job_id))
+        await db.commit()
+
     storage_root = Path(settings.storage_dir).resolve()
     job_storage_dir = (storage_root / job_id).resolve()
     if not str(job_storage_dir).startswith(str(storage_root)):
@@ -85,7 +90,8 @@ async def run_pipeline(job_id: str) -> str:
                     await db.commit()
 
         # 4. Audio & Beat Quantization
-        select_track_for_mood(mood)
+        track = select_track_for_mood(mood)
+        audio_filename = track.get("filename", "cyber-pulse.wav")
 
         # 5. Render Stage
         await update_job_status(job_id, JobStatus.RENDERING, 75, "Rendering 1080p MP4 launch film...")
@@ -96,6 +102,7 @@ async def run_pipeline(job_id: str) -> str:
             brief.product_name,
             job_storage_dir,
             live_url=live_url,
+            audio_track_filename=audio_filename,
         )
 
         # 6. Complete
@@ -119,4 +126,3 @@ async def run_pipeline(job_id: str) -> str:
         safe_err = _sanitize_error(exc)
         await update_job_status(job_id, JobStatus.FAILED, 0, "Pipeline failed", error=safe_err)
         raise
-

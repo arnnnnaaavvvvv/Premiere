@@ -12,6 +12,7 @@ export default function Home() {
 
   // Poll for job status updates when an active job is processing
   useEffect(() => {
+    let isMounted = true;
     if (!currentJob || currentJob.status === "done" || currentJob.status === "failed") {
       return;
     }
@@ -19,13 +20,20 @@ export default function Home() {
     const interval = setInterval(async () => {
       try {
         const updated = await fetchJobStatus(currentJob.id);
-        setCurrentJob(updated);
+        if (isMounted) {
+          setCurrentJob(updated);
+        }
       } catch (err) {
-        console.error("Error polling job status:", err);
+        if (isMounted) {
+          console.error("Error polling job status:", err);
+        }
       }
     }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [currentJob]);
 
   const handleJobSubmit = async (payload: CreateJobPayload) => {

@@ -34,7 +34,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
-    # LLM Settings
+    # External APIs
+    github_token: str = Field(default="", validation_alias="GITHUB_TOKEN")
     llm_provider: str = "openai"
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")

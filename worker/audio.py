@@ -21,7 +21,7 @@ def select_track_for_mood(mood: str) -> dict:
             return track
     return tracks[0] if tracks else {
         "id": "cyber-pulse", "name": "Cyber Pulse", "mood": "energetic",
-        "bpm": 128, "beat_interval_sec": 0.46875, "filename": "cyber-pulse.mp3"
+        "bpm": 128, "beat_interval_sec": 0.46875, "filename": "cyber-pulse.wav"
     }
 
 def calculate_beat_timestamps(bpm: float, total_duration_sec: float) -> list[float]:

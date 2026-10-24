@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi import HTTPException
-from fastapi.testclient import TestClient
 from api.main import app
 from api.rate_limit import _ip_requests
 from worker.analyze import build_deterministic_brief

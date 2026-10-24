@@ -26,15 +26,16 @@ def get_font(font_path: Path, size: int) -> ImageFont.FreeTypeFont | ImageFont.I
         return ImageFont.load_default()
 
 def draw_safe_text(draw: ImageDraw.ImageDraw, text: str, y: int, max_w: int, base_size: int, font_path: Path, fill=(255, 255, 255)):
-    """Draw centered text with dynamic scaling to prevent horizontal overflow."""
+    """Draw centered text with Unicode sanitization and dynamic scaling to prevent overflow."""
+    clean_text = "".join(c for c in text if 32 <= ord(c) <= 126 or ord(c) >= 160)
     size = base_size
     font = get_font(font_path, size)
-    bbox = draw.textbbox((0, 0), text, font=font)
+    bbox = draw.textbbox((0, 0), clean_text, font=font)
     while (bbox[2] - bbox[0]) > max_w and size > 24:
         size -= 4
         font = get_font(font_path, size)
-        bbox = draw.textbbox((0, 0), text, font=font)
-    draw.text((960, y), text, fill=fill, font=font, anchor="mm")
+        bbox = draw.textbbox((0, 0), clean_text, font=font)
+    draw.text((960, y), clean_text, fill=fill, font=font, anchor="mm")
 
 def render_scene_frame(scene, frame_idx: int, total_frames: int, media_path: str | None, product_name: str, live_url: str = "premiere.dev", brand_color: tuple[int, int, int] = (59, 130, 246)) -> np.ndarray:
     """Render 1920x1080 frame with Bebas Neue typography, safe margins, and glow."""
@@ -89,7 +90,7 @@ def find_ffmpeg_bin() -> str | None:
                     return os.path.join(root, f)
     return None
 
-async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str], product_name: str, output_dir: Path, live_url: str = "premiere.dev") -> str:
+async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str], product_name: str, output_dir: Path, live_url: str = "premiere.dev", audio_track_filename: str = "cyber-pulse.wav") -> str:
     """Stitch beat-aligned scenes into 1080p MP4 and mux audio if available."""
     os.makedirs(output_dir, exist_ok=True)
     raw_path = output_dir / f"raw-{job_id}.mp4"
@@ -104,7 +105,12 @@ async def render_video(job_id: str, plan: ScenePlan, asset_paths: dict[str, str]
     finally:
         out.release()
 
-    ffmpeg, audio_wav = find_ffmpeg_bin(), Path(__file__).resolve().parent / "audio" / "cyber-pulse.wav"
+    ffmpeg = find_ffmpeg_bin()
+    audio_dir = Path(__file__).resolve().parent / "audio"
+    audio_wav = audio_dir / audio_track_filename
+    if not audio_wav.exists():
+        audio_wav = audio_dir / "cyber-pulse.wav"
+
     if ffmpeg and audio_wav.exists():
         cmd = [ffmpeg, "-y", "-i", str(raw_path), "-i", str(audio_wav), "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(final_path)]
         try:

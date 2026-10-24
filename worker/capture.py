@@ -99,6 +99,8 @@ async def capture_page(
                 await page.wait_for_timeout(40)
 
             await page.screenshot(path=str(screenshot_path), full_page=False)
+            if not os.path.exists(screenshot_path) or os.path.getsize(screenshot_path) < 1024:
+                raise RuntimeError("Empty or corrupt screenshot captured")
 
         except Exception:
             from PIL import Image, ImageDraw

@@ -53,12 +53,14 @@ const defaultProps: VideoProps = {
 };
 
 export const RemotionRoot: React.FC = () => {
+  const totalFrames = defaultProps.scenes.reduce((acc, s) => acc + s.durationFrames, 0);
+
   return (
     <>
       <Composition
         id="PremiereComposition"
         component={LaunchVideo}
-        durationInFrames={390}
+        durationInFrames={totalFrames || 465}
         fps={30}
         width={1920}
         height={1080}
