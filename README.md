@@ -10,6 +10,51 @@ By coupling static AST repository analysis with an autonomous headless browser c
 
 ---
 
+## Quickstart & Run Commands
+
+### 1. Prerequisites
+- Python 3.11+
+- Node.js 18+ & npm
+- Playwright Chromium (`python -m playwright install chromium`)
+
+### 2. Setup & Environment Variables
+```bash
+# 1. Clone repository
+git clone https://github.com/arnnnnaaavvvvv/Premiere.git
+cd Premiere
+
+# 2. Configure environment
+cp .env.example .env
+
+# Key Environment Variables in .env:
+# DATABASE_URL=sqlite+aiosqlite:///./reelforge.db
+# REDIS_URL=redis://localhost:6379/0
+# OPENAI_API_KEY=your_key_here  (optional; automatic deterministic fallback provided)
+# PUBLIC_BASE_URL=http://localhost:8000
+# RATE_LIMIT_PER_MINUTE=60
+# SSRF_PROTECTION_ENABLED=true
+```
+
+### 3. Run Development Servers
+```bash
+# Terminal 1: Launch FastAPI Backend
+python -m uvicorn api.main:app --reload --port 8000
+
+# Terminal 2: Launch Background Worker Daemon (or run standalone background tasks)
+python -m worker.main
+
+# Terminal 3: Launch Next.js 14 Frontend
+cd web && npm install && npm run dev
+```
+
+### 4. Run Automated Test Suite
+```bash
+# Run full API and pipeline stage tests
+python -m pytest tests/ -v
+```
+
+---
+
 ## Non-Negotiable Design System
 
 | Dimension | Specification | Implementation Standard |

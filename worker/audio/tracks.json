@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cyber-pulse",
+    "name": "Cyber Pulse",
+    "mood": "energetic",
+    "bpm": 128,
+    "license": "CC-BY-4.0",
+    "attribution": "Royalty Free Audio Library",
+    "filename": "cyber-pulse.mp3",
+    "beat_interval_sec": 0.46875
+  },
+  {
+    "id": "ambient-horizon",
+    "name": "Ambient Horizon",
+    "mood": "minimal",
+    "bpm": 100,
+    "license": "Royalty-Free-Commercial",
+    "attribution": "Royalty Free Audio Library",
+    "filename": "ambient-horizon.mp3",
+    "beat_interval_sec": 0.6
+  },
+  {
+    "id": "neon-overdrive",
+    "name": "Neon Overdrive",
+    "mood": "futuristic",
+    "bpm": 140,
+    "license": "Royalty-Free-Commercial",
+    "attribution": "Royalty Free Audio Library",
+    "filename": "neon-overdrive.mp3",
+    "beat_interval_sec": 0.42857
+  }
+]

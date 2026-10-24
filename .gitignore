@@ -29,7 +29,11 @@ logs/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+storage/
+*.db
+reelforge.db
 
 # OS Files
 .DS_Store
 Thumbs.db
+
