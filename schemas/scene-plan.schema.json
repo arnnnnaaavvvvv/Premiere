@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScenePlan",
+  "description": "Validated sequence of cinematic scenes, durations, transitions, and copy for video composition",
+  "type": "object",
+  "required": [
+    "jobId",
+    "mood",
+    "aspectRatio",
+    "fps",
+    "totalDurationFrames",
+    "scenes",
+    "audioConfig"
+  ],
+  "properties": {
+    "jobId": { "type": "string", "format": "uuid" },
+    "mood": {
+      "type": "string",
+      "enum": ["minimal", "energetic", "futuristic"]
+    },
+    "aspectRatio": {
+      "type": "string",
+      "enum": ["16:9", "9:16", "1:1"],
+      "default": "16:9"
+    },
+    "fps": {
+      "type": "integer",
+      "enum": [30, 60],
+      "default": 60
+    },
+    "totalDurationFrames": {
+      "type": "integer",
+      "minimum": 900,
+      "maximum": 3600,
+      "description": "Total frames in composition (e.g. 1800 frames = 30s at 60fps)"
+    },
+    "audioConfig": {
+      "type": "object",
+      "required": ["trackId", "trackName", "bpm", "narrationEnabled"],
+      "properties": {
+        "trackId": { "type": "string" },
+        "trackName": { "type": "string" },
+        "bpm": { "type": "number" },
+        "narrationEnabled": { "type": "boolean" },
+        "narrationVoiceId": { "type": "string" }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "sceneId",
+          "sceneType",
+          "durationFrames",
+          "transitionIn",
+          "props"
+        ],
+        "properties": {
+          "sceneId": { "type": "string" },
+          "sceneType": {
+            "type": "string",
+            "enum": [
+              "TitleReveal",
+              "DeviceShowcase",
+              "FeatureZoom",
+              "StatCounter",
+              "KineticText",
+              "Outro"
+            ]
+          },
+          "durationFrames": {
+            "type": "integer",
+            "minimum": 120,
+            "maximum": 240,
+            "description": "2 to 4 seconds at 60fps (120 to 240 frames), beat-quantized"
+          },
+          "transitionIn": {
+            "type": "string",
+            "enum": [
+              "none",
+              "push",
+              "zoom-through",
+              "mask-wipe",
+              "blur-dissolve",
+              "glitch-flash",
+              "shared-element-morph"
+            ]
+          },
+          "transitionFrames": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 24,
+            "default": 14
+          },
+          "narrationScript": {
+            "type": "string",
+            "description": "Spoken text during this scene if narration is toggled on"
+          },
+          "props": {
+            "type": "object",
+            "description": "Polymorphic props strictly typed per sceneType"
+          }
+        }
+      }
+    }
+  }
+}

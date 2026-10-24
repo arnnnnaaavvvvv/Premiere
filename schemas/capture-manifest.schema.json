@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CaptureManifest",
+  "description": "Deterministic instruction set for Playwright headless browser capture worker",
+  "type": "object",
+  "required": ["jobId", "baseUrl", "viewport", "targets"],
+  "properties": {
+    "jobId": { "type": "string", "format": "uuid" },
+    "baseUrl": { "type": "string", "format": "uri" },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height", "deviceScaleFactor"],
+      "properties": {
+        "width": { "type": "integer", "default": 1920 },
+        "height": { "type": "integer", "default": 1080 },
+        "deviceScaleFactor": { "type": "integer", "default": 2 }
+      }
+    },
+    "authStrategy": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["none", "form_login", "http_basic"] },
+        "loginUrl": { "type": "string" },
+        "usernameSelector": { "type": "string" },
+        "passwordSelector": { "type": "string" },
+        "submitSelector": { "type": "string" },
+        "successIndicatorSelector": { "type": "string" }
+      }
+    },
+    "bannerCleanupSelectors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "CSS selectors to immediately remove from DOM (e.g. cookie notices, Intercom badges)"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["assetId", "sceneId", "route", "captureType", "actions"],
+        "properties": {
+          "assetId": { "type": "string" },
+          "sceneId": { "type": "string" },
+          "route": { "type": "string" },
+          "captureType": {
+            "type": "string",
+            "enum": ["video_clip", "high_res_snapshot", "element_crop"]
+          },
+          "targetElementSelector": { "type": "string" },
+          "durationSeconds": { "type": "number", "minimum": 1, "maximum": 10 },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["action"],
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "wait_for_selector",
+                    "wait_for_network_idle",
+                    "synthetic_mouse_move",
+                    "synthetic_hover",
+                    "synthetic_click",
+                    "smooth_scroll",
+                    "inject_css"
+                  ]
+                },
+                "selector": { "type": "string" },
+                "scrollDeltaY": { "type": "integer" },
+                "durationMs": { "type": "integer" },
+                "cssString": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

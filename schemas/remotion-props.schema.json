@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RemotionProps",
+  "description": "Deterministic input props passed into Remotion rendering engine for final MP4 synthesis",
+  "type": "object",
+  "required": [
+    "compositionId",
+    "fps",
+    "width",
+    "height",
+    "durationInFrames",
+    "theme",
+    "audio",
+    "scenes"
+  ],
+  "properties": {
+    "compositionId": { "type": "string" },
+    "fps": { "type": "integer", "enum": [30, 60] },
+    "width": { "type": "integer" },
+    "height": { "type": "integer" },
+    "durationInFrames": { "type": "integer" },
+    "theme": {
+      "type": "object",
+      "required": ["primaryColor", "accentColor", "backgroundColor", "surfaceColor", "headlineFont", "captionFont"],
+      "properties": {
+        "primaryColor": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "backgroundColor": { "type": "string" },
+        "surfaceColor": { "type": "string" },
+        "headlineFont": { "type": "string", "default": "Bebas Neue" },
+        "captionFont": { "type": "string", "default": "Inter" }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "required": ["musicUrl", "volume", "beatTimestampsSeconds", "fadeInFrames", "fadeOutFrames"],
+      "properties": {
+        "musicUrl": { "type": "string", "format": "uri" },
+        "volume": { "type": "number", "minimum": 0, "maximum": 1 },
+        "beatTimestampsSeconds": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "narrationUrl": { "type": "string", "format": "uri" },
+        "ducking": {
+          "type": "object",
+          "properties": {
+            "duckedVolume": { "type": "number", "default": 0.2 },
+            "attackFrames": { "type": "integer", "default": 12 },
+            "releaseFrames": { "type": "integer", "default": 24 }
+          }
+        },
+        "fadeInFrames": { "type": "integer", "default": 15 },
+        "fadeOutFrames": { "type": "integer", "default": 45 }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "fromFrame",
+          "durationFrames",
+          "transitionIn",
+          "data"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TitleReveal",
+              "DeviceShowcase",
+              "FeatureZoom",
+              "StatCounter",
+              "KineticText",
+              "Outro"
+            ]
+          },
+          "fromFrame": { "type": "integer" },
+          "durationFrames": { "type": "integer" },
+          "transitionIn": {
+            "type": "string",
+            "enum": [
+              "none",
+              "push",
+              "zoom-through",
+              "mask-wipe",
+              "blur-dissolve",
+              "glitch-flash",
+              "shared-element-morph"
+            ]
+          },
+          "data": { "type": "object" }
+        }
+      }
+    }
+  }
+}

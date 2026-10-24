@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProductBrief",
+  "description": "Structured product intelligence synthesized from repo analysis and website metadata",
+  "type": "object",
+  "required": [
+    "productName",
+    "tagline",
+    "elevatorPitch",
+    "category",
+    "primaryAudience",
+    "keyFeatures",
+    "metricsOrDifferentiators",
+    "colorPalette",
+    "techStackHighlights",
+    "detectedKeyRoutes"
+  ],
+  "properties": {
+    "productName": {
+      "type": "string",
+      "description": "Clean, official brand/product name"
+    },
+    "tagline": {
+      "type": "string",
+      "description": "High-impact punchline in uppercase style (max 8 words)"
+    },
+    "elevatorPitch": {
+      "type": "string",
+      "description": "One to two sentence clear explanation of the core value proposition"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["DevTool", "SaaS", "FinTech", "AI/ML", "E-Commerce", "Productivity", "Infrastructure", "ConsumerApp", "Other"]
+    },
+    "primaryAudience": {
+      "type": "string",
+      "description": "Target demographic or persona (e.g. 'Cloud Engineers', 'Growth Marketers')"
+    },
+    "keyFeatures": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["headline", "detail", "associatedRouteOrSelector"],
+        "properties": {
+          "headline": {
+            "type": "string",
+            "description": "2-4 punchy words (e.g. 'INSTANT CI/CD')"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Short explanation of the feature benefit"
+          },
+          "associatedRouteOrSelector": {
+            "type": "string",
+            "description": "Path or CSS selector representing this feature in the live app"
+          }
+        }
+      }
+    },
+    "metricsOrDifferentiators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["value", "label"],
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Metric value (e.g. '10x', '99.9%', '<5ms')"
+          },
+          "label": {
+            "type": "string",
+            "description": "Metric context in uppercase (e.g. 'FASTER BUILDS')"
+          }
+        }
+      }
+    },
+    "colorPalette": {
+      "type": "object",
+      "required": ["primary", "accent", "background", "surface"],
+      "properties": {
+        "primary": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+        "accent": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+        "background": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+        "surface": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" }
+      }
+    },
+    "techStackHighlights": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "detectedKeyRoutes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "purpose"],
+        "properties": {
+          "path": { "type": "string" },
+          "purpose": { "type": "string" }
+        }
+      }
+    }
+  }
+}

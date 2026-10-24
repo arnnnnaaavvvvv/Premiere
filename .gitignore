@@ -1,0 +1,35 @@
+# Environment and local configurations
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+*.egg-info/
+.remotion/
+
+# Cache and logs
+.cache/
+*.log
+logs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# OS Files
+.DS_Store
+Thumbs.db
