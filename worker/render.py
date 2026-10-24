@@ -1,61 +1,83 @@
-"""Video render stage: compiles ScenePlan and captured assets into 1080p MP4."""
+"""Video render engine: compiles ScenePlan, Bebas Neue typography, safe margins, and audio muxing."""
 
-import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from api.config import settings
 from worker.models import ScenePlan
+
+FONTS_DIR = Path(__file__).resolve().parent / "assets" / "fonts"
+BEBAS_FONT_PATH = FONTS_DIR / "BebasNeue-Regular.ttf"
+INTER_FONT_PATH = FONTS_DIR / "Inter-Regular.ttf"
+
+def get_font(font_path: Path, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """Load bundled TrueType font or fall back to system sans-serif."""
+    if font_path.exists():
+        try:
+            return ImageFont.truetype(str(font_path), size)
+        except Exception:
+            pass
+    try:
+        return ImageFont.truetype("arialbd.ttf" if "Bebas" in font_path.name else "arial.ttf", size)
+    except Exception:
+        return ImageFont.load_default()
+
+def draw_safe_text(draw: ImageDraw.ImageDraw, text: str, y: int, max_w: int, base_size: int, font_path: Path, fill=(255, 255, 255)):
+    """Draw centered text with dynamic scaling to prevent horizontal overflow."""
+    size = base_size
+    font = get_font(font_path, size)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    w = bbox[2] - bbox[0]
+
+    # Shrink font until text fits comfortably within safe margins
+    while w > max_w and size > 24:
+        size -= 4
+        font = get_font(font_path, size)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        w = bbox[2] - bbox[0]
+
+    draw.text((960, y), text, fill=fill, font=font, anchor="mm")
 
 def render_scene_frame(
     scene,
     frame_idx: int,
-    total_scene_frames: int,
+    total_frames: int,
     media_path: str | None,
     product_name: str,
+    live_url: str = "premiere.dev",
     brand_color: tuple[int, int, int] = (59, 130, 246),
 ) -> np.ndarray:
-    """Generate a single 1920x1080 frame adhering to Apple/Nike dark aesthetic."""
+    """Render 1920x1080 frame with Bebas Neue typography, safe margins, and glow."""
     img = Image.new("RGB", (1920, 1080), color=(5, 5, 5))
     draw = ImageDraw.Draw(img)
 
-    # 1. Atmospheric Diffuse Ambient Radial Glow
+    # 1. Ambient Radial Glow
     glow_overlay = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
     glow_draw = ImageDraw.Draw(glow_overlay)
-    glow_draw.ellipse([460, 100, 1460, 800], fill=(*brand_color, 30))
+    glow_draw.ellipse([460, 120, 1460, 780], fill=(*brand_color, 28))
     img.paste(glow_overlay, (0, 0), glow_overlay)
 
-    # 2. Render Scene Typography & Layout
-    t = frame_idx / max(total_scene_frames, 1)
-    scale = 0.95 + 0.05 * min(t * 3.0, 1.0)
-    font_size = int(120 * scale)
-
-    try:
-        font = ImageFont.truetype("arialbd.ttf", font_size)
-        sub_font = ImageFont.truetype("arial.ttf", 32)
-    except Exception:
-        font = ImageFont.load_default()
-        sub_font = ImageFont.load_default()
-
+    # 2. Render Scene Typography adhering to Safe Margins (Max Width: 1680px)
+    max_safe_width = 1680
     headline = scene.headline.upper()
-    caption = scene.caption
 
-    if scene.scene_type in ("TitleReveal", "StatCounter", "KineticText", "Outro"):
-        draw.text((960, 480), headline, fill=(255, 255, 255), font=font, anchor="mm")
-        draw.text((960, 580), caption, fill=(148, 163, 184), font=sub_font, anchor="mm")
+    if scene.scene_type in ("TitleReveal", "StatCounter", "KineticText"):
+        draw_safe_text(draw, headline, 480, max_safe_width, 140, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, scene.caption, 590, max_safe_width, 28, INTER_FONT_PATH, (148, 163, 184))
+
     elif scene.scene_type == "DeviceShowcase":
-        draw.text((960, 160), headline, fill=(255, 255, 255), font=font, anchor="mm")
-        # Draw 3D Mockup Device Frame
+        draw_safe_text(draw, headline, 160, max_safe_width, 84, BEBAS_FONT_PATH, (255, 255, 255))
         if media_path and os.path.exists(media_path):
             try:
                 screen = Image.open(media_path).resize((1300, 720))
-                img.paste(screen, (310, 260))
+                img.paste(screen, (310, 240))
             except Exception:
                 pass
-        draw.rectangle([308, 258, 1612, 982], outline=(*brand_color, 120), width=3)
+        draw.rectangle([308, 238, 1612, 962], outline=(*brand_color, 140), width=3)
+
     elif scene.scene_type == "FeatureZoom":
         if media_path and os.path.exists(media_path):
             try:
@@ -63,13 +85,31 @@ def render_scene_frame(
                 img.paste(screen, (0, 0))
             except Exception:
                 pass
-        draw.rectangle([100, 720, 800, 980], fill=(13, 15, 20), outline=(255, 255, 255), width=1)
-        draw.text((450, 800), headline, fill=(255, 255, 255), font=font, anchor="mm")
-        draw.text((450, 880), caption, fill=(148, 163, 184), font=sub_font, anchor="mm")
+        draw.rectangle([120, 700, 840, 960], fill=(13, 15, 20), outline=(255, 255, 255, 80), width=1)
+        draw_safe_text(draw, headline, 780, 680, 64, BEBAS_FONT_PATH, (255, 255, 255))
+        draw_safe_text(draw, scene.caption, 860, 680, 22, INTER_FONT_PATH, (148, 163, 184))
 
-    # 3. Vignette Border
-    frame_np = np.array(img)
-    return cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
+    elif scene.scene_type == "Outro":
+        draw_safe_text(draw, headline, 420, max_safe_width, 130, BEBAS_FONT_PATH, (255, 255, 255))
+        draw.rectangle([740, 520, 1180, 600], fill=brand_color)
+        draw_safe_text(draw, "GET STARTED NOW", 560, 400, 36, BEBAS_FONT_PATH, (255, 255, 255))
+        # Outro always includes the target URL
+        clean_url = live_url.replace("https://", "").replace("http://", "").rstrip("/")
+        draw_safe_text(draw, clean_url.upper(), 660, max_safe_width, 26, INTER_FONT_PATH, (148, 163, 184))
+
+    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
+def find_ffmpeg_bin() -> str | None:
+    """Detect available FFmpeg executable from system or Playwright cache."""
+    if shutil.which("ffmpeg"):
+        return "ffmpeg"
+    playwright_dir = os.path.expanduser(r"~\AppData\Local\ms-playwright")
+    if os.path.exists(playwright_dir):
+        for root, _, files in os.walk(playwright_dir):
+            for f in files:
+                if f.lower().startswith("ffmpeg"):
+                    return os.path.join(root, f)
+    return None
 
 async def render_video(
     job_id: str,
@@ -77,13 +117,15 @@ async def render_video(
     asset_paths: dict[str, str],
     product_name: str,
     output_dir: Path,
+    live_url: str = "premiere.dev",
 ) -> str:
-    """Stitch beat-aligned scenes into final 1080p MP4."""
+    """Stitch beat-aligned scenes into 1080p MP4 and mux audio if available."""
     os.makedirs(output_dir, exist_ok=True)
-    mp4_path = output_dir / f"launch-{job_id}.mp4"
+    raw_video_path = output_dir / f"raw-{job_id}.mp4"
+    final_mp4_path = output_dir / f"launch-{job_id}.mp4"
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(str(mp4_path), fourcc, 30.0, (1920, 1080))
+    out = cv2.VideoWriter(str(raw_video_path), fourcc, 30.0, (1920, 1080))
 
     try:
         for scene in plan.scenes:
@@ -92,12 +134,37 @@ async def render_video(
                 frame_bgr = render_scene_frame(
                     scene=scene,
                     frame_idx=f,
-                    total_scene_frames=scene.duration_frames,
+                    total_frames=scene.duration_frames,
                     media_path=media,
                     product_name=product_name,
+                    live_url=live_url,
                 )
                 out.write(frame_bgr)
     finally:
         out.release()
 
-    return str(mp4_path)
+    # Mux audio with FFmpeg if available
+    ffmpeg = find_ffmpeg_bin()
+    audio_wav = Path(__file__).resolve().parent / "audio" / "cyber-pulse.wav"
+
+    if ffmpeg and audio_wav.exists():
+        cmd = [
+            ffmpeg, "-y",
+            "-i", str(raw_video_path),
+            "-i", str(audio_wav),
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            str(final_mp4_path)
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0 and os.path.exists(final_mp4_path):
+            try:
+                os.remove(raw_video_path)
+            except Exception:
+                pass
+            return str(final_mp4_path)
+
+    # Fallback to raw video if audio muxing was skipped
+    return str(raw_video_path)

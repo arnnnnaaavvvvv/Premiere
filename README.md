@@ -35,12 +35,26 @@ cp .env.example .env
 # SSRF_PROTECTION_ENABLED=true
 ```
 
+### 2. Environment Variables Table
+
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | String | `sqlite+aiosqlite:///./reelforge.db` | Async SQLAlchemy database connection URL (SQLite or Postgres). |
+| `REDIS_URL` | String | `redis://localhost:6379/0` | Redis instance for task queue and distributed caching. |
+| `OPENAI_API_KEY` | String | `""` (Empty) | OpenAI API key for GPT-4o analysis (automatic deterministic fallback provided). |
+| `ANTHROPIC_API_KEY` | String | `""` (Empty) | Optional Anthropic key for Claude 3.5 Sonnet pipeline. |
+| `STORAGE_DIR` | Path | `./storage` | Directory storing raw captures, audio stems, and output MP4 files. |
+| `PUBLIC_BASE_URL` | String | `http://localhost:8000` | Base URL used for constructing signed video download links. |
+| `RATE_LIMIT_PER_MINUTE` | Int | `60` | Maximum requests permitted per client IP per minute. |
+| `SSRF_PROTECTION_ENABLED` | Bool | `true` | Enforces pre-flight DNS and route interception against private IP subnets. |
+| `VIDEO_RENDER_FPS` | Int | `30` | Framerate of final rendered H.264 MP4 video. |
+
 ### 3. Run Development Servers
 ```bash
 # Terminal 1: Launch FastAPI Backend
 python -m uvicorn api.main:app --reload --port 8000
 
-# Terminal 2: Launch Background Worker Daemon (or run standalone background tasks)
+# Terminal 2: Launch Background Worker Daemon
 python -m worker.main
 
 # Terminal 3: Launch Next.js 14 Frontend
@@ -49,9 +63,32 @@ cd web && npm install && npm run dev
 
 ### 4. Run Automated Test Suite
 ```bash
-# Run full API and pipeline stage tests
+# Run full API, security, quality, and pipeline stage tests (21 tests)
 python -m pytest tests/ -v
 ```
+
+---
+
+## How to Add a New Scene Template in 5 Steps
+
+1. **Define Schema**: Add your scene identifier to `SceneType` in `worker/models.py` and `video/src/types.ts` (e.g. `ArchitectureBento`).
+2. **Implement React Component**: Create `video/src/scenes/ArchitectureBento.tsx` with Bebas Neue headline, Inter captions, and spring physics.
+3. **Register in Composition**: Add a case for `ArchitectureBento` in `video/src/Composition.tsx` within the `<Series>` sequencer.
+4. **Update Script Director**: In `worker/script.py`, specify the logic and props under which the director allocates this scene.
+5. **Add Test Verification**: Add visual bounding-box and text-scaling tests in `tests/test_render_quality.py`.
+
+---
+
+## Troubleshooting & Diagnostics
+
+- **Playwright Navigation Timeout**:
+  If target site is slow or behind a bot wall, `worker/capture.py` automatically synthesizes an Apple-style stylized fallback slide so the video renders without failure.
+- **Font Rendering on Linux / Windows**:
+  `BebasNeue-Regular.ttf` and `Inter-Regular.ttf` are bundled directly under `worker/assets/fonts/` to ensure zero font fallback regardless of operating system.
+- **FFmpeg Not Found**:
+  The system automatically detects Playwright's bundled `ffmpeg` at `~/.local/share/ms-playwright/` or `~/AppData/Local/ms-playwright/`. Run `python -m playwright install ffmpeg` if audio muxing is skipped.
+- **SSRF Block Errors (`ERR_SSRF_PROHIBITED`)**:
+  Localhost, 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16, and cloud metadata (169.254.169.254) are strictly blocked. Test with public domains (e.g. `https://github.com/facebook/react` and `https://react.dev`).
 
 ---
 

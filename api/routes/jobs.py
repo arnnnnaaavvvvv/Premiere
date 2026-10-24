@@ -1,25 +1,19 @@
-"""Job routes: creation, status polling, and video streaming endpoints."""
+"""Job routes: creation, status polling, and signed video streaming endpoints."""
 
 import os
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from api.config import settings
 from api.database import get_db
 from api.models import Job, JobStatus, Render
 from api.schemas import CreateJobRequest, JobResponse
+from api.security import create_signed_video_token, verify_signed_video_token
 from worker.pipeline import run_pipeline
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
-
-# Simple in-process background worker hook (or Redis queue)
-_queue_callback = None
-
-def register_queue_callback(callback):
-    """Register worker dispatch hook for newly queued jobs."""
-    global _queue_callback
-    _queue_callback = callback
 
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 async def create_job(
@@ -64,7 +58,7 @@ async def create_job(
 
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
-    """Fetch real-time progress and status of a video job."""
+    """Fetch real-time progress and signed video URL of a job."""
     stmt = select(Job).options(selectinload(Job.render)).where(Job.id == job_id)
     res = await db.execute(stmt)
     job = res.scalar_one_or_none()
@@ -72,7 +66,11 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
-    video_url = job.render.video_url if job.render else None
+    video_url = None
+    if job.render and job.render.video_url:
+        token = create_signed_video_token(job.id)
+        video_url = f"{settings.public_base_url}/api/v1/jobs/{job.id}/video?token={token}"
+
     return JobResponse(
         id=job.id,
         live_url=job.live_url,
@@ -90,8 +88,15 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 @router.get("/{job_id}/video")
-async def get_job_video(job_id: str, db: AsyncSession = Depends(get_db)):
-    """Stream or download the final rendered MP4 video file."""
+async def get_job_video(
+    job_id: str,
+    token: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stream or download the final rendered MP4 video with signature verification."""
+    if token and not verify_signed_video_token(job_id, token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired video download token")
+
     stmt = select(Render).where(Render.job_id == job_id)
     res = await db.execute(stmt)
     render = res.scalar_one_or_none()

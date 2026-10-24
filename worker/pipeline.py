@@ -79,7 +79,14 @@ async def run_pipeline(job_id: str) -> str:
         # 5. Render Stage
         t0 = time.time()
         await update_job_status(job_id, JobStatus.RENDERING, 75, "Rendering 1080p MP4 launch film...")
-        mp4_path = await render_video(job_id, plan, asset_paths, brief.product_name, job_storage_dir)
+        mp4_path = await render_video(
+            job_id,
+            plan,
+            asset_paths,
+            brief.product_name,
+            job_storage_dir,
+            live_url=live_url,
+        )
         logger.info("Stage completed: render", job_id=job_id, duration_sec=round(time.time() - t0, 2))
 
         # 6. Complete

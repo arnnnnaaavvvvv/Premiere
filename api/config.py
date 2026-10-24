@@ -4,11 +4,9 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Base directory paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 STORAGE_BASE_DIR = BASE_DIR / "storage"
 
-# Video generation defaults
 DEFAULT_FPS = 30
 DEFAULT_CAPTURE_FPS = 60
 DEFAULT_WIDTH = 1920
@@ -25,14 +23,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Core environment
     app_name: str = "Premiere"
     debug: bool = False
     database_url: str = "sqlite+aiosqlite:///./reelforge.db"
     redis_url: str = "redis://localhost:6379/0"
 
+    # CORS origins
+    cors_allowed_origins: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
     # LLM Settings
-    llm_provider: str = "openai"  # openai, anthropic, or mock
+    llm_provider: str = "openai"
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
 
