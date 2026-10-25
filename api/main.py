@@ -36,6 +36,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins if not settings.debug else ["*"],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -44,7 +45,8 @@ app.add_middleware(
 @app.middleware("http")
 async def security_headers_and_rate_limit_middleware(request: Request, call_next):
     """Enforce per-IP request rate limits and inject OWASP security headers."""
-    if request.url.path != "/health" and not request.url.path.endswith("/video"):
+    # CORS preflight OPTIONS requests must never be rate-limited
+    if request.method != "OPTIONS" and request.url.path != "/health" and not request.url.path.endswith("/video"):
         try:
             check_rate_limit(request)
         except Exception as exc:

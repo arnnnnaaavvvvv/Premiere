@@ -35,7 +35,12 @@ export const JobForm: React.FC<JobFormProps> = ({ onSubmit, isLoading }) => {
         narration,
       });
     } catch (err: any) {
-      setError(err.message || "Failed to create video job");
+      const msg = err.message || "Failed to create video job";
+      if (msg === "Failed to fetch" || msg.includes("Failed to fetch")) {
+        setError("Unable to connect to backend server. Make sure the FastAPI backend is running on http://127.0.0.1:8000 (run: python -m uvicorn api.main:app --port 8000).");
+      } else {
+        setError(msg);
+      }
     }
   };
 
