@@ -54,7 +54,7 @@ export default function Home() {
       {/* Hero Header */}
       <div className="text-center space-y-4 mb-12 z-10 max-w-3xl">
         <div className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold uppercase tracking-widest text-blue-400">
-          AUTONOMOUS PRODUCT LAUNCH ENGINE
+          NOTION-STYLE PRODUCT EXPLAINER ENGINE
         </div>
         <h1 className="text-6xl sm:text-8xl font-headline tracking-tight text-white uppercase leading-none">
           CRAFT THE FILM. <br />
@@ -63,7 +63,7 @@ export default function Home() {
           </span>
         </h1>
         <p className="text-slate-400 text-lg sm:text-xl font-normal max-w-xl mx-auto">
-          Submit your live URL and GitHub repository. Receive a broadcast-quality Apple/Nike-style 1080p launch video.
+          Paste any live URL and GitHub repository. Premiere distills your project&apos;s real working features and produces a broadcast-quality Notion-style product demo film.
         </p>
       </div>
 

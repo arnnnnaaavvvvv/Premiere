@@ -7,7 +7,7 @@ const STAGES = [
   { key: "analyzing", label: "Analyze Codebase" },
   { key: "scripting", label: "Script Director" },
   { key: "capturing", label: "Browser Capture" },
-  { key: "rendering", label: "Remotion 1080p" },
+  { key: "rendering", label: "Notion 1080p Render" },
 ];
 
 export const ProgressStepper: React.FC<{ job: JobStatusResponse }> = ({ job }) => {
